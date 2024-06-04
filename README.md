@@ -38,15 +38,6 @@ const spaceUp = hotkey({ key: 'Space', type: 'keyup' });
 const spacePress = hotkey({ key: 'Space', type: 'keypress' });
 ```
 
-#### Shortcut
-
-```tsx
-import { hotkey } from 'effector-hotkey';
-
-const copyPressed = hotkey('Ctrl+C');
-const spaceDown = hotkey('Space', 'keydown');
-```
-
 #### `filter` prop
 
 ```tsx
