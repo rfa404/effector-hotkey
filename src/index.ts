@@ -1,18 +1,22 @@
 import {
-  guard,
   createEvent,
-  Event,
-  Store,
-  Target,
-  sample,
   createStore,
-  Unit,
+  Event,
+  sample,
+  Store,
+  UnitTargetable,
 } from 'effector';
 import { validateHotkey } from './utils/validate-hotkey';
 
 export const keyup = createEvent<KeyboardEvent>();
 export const keydown = createEvent<KeyboardEvent>();
 export const keypress = createEvent<KeyboardEvent>();
+
+const keyEvents = {
+  keyup,
+  keydown,
+  keypress,
+};
 
 export const $isShiftDown = createStore(false);
 export const $isCtrlDown = createStore(false);
@@ -22,54 +26,39 @@ $isShiftDown.on([keyup, keydown], (prev, evt) => evt.shiftKey);
 $isCtrlDown.on([keyup, keydown], (prev, evt) => evt.ctrlKey);
 $isAltDown.on([keyup, keydown], (prev, evt) => evt.altKey);
 
-const keyEvents = {
-  keyup,
-  keydown,
-  keypress,
-};
-
-interface hotkeyT {
-  (key: KeyboardEvent['key'], type?: keyof typeof keyEvents): Event<
-    KeyboardEvent
-  >;
+export interface HotkeyT {
   (params: {
-    key: KeyboardEvent['key'];
-    type?: keyof typeof keyEvents;
+    key: string;
+    type: keyof typeof keyEvents;
     filter?: Store<boolean>;
-    target?: Target;
+    target?: UnitTargetable<unknown> | UnitTargetable<unknown>[];
   }): Event<KeyboardEvent>;
 }
 
 /** Returns `Event` that gets triggered when a certain key pressed (or keyup/keydown events triggered) */
-export const hotkey: hotkeyT = (...args) => {
-  const normalizedParams =
-    typeof args[0] === 'string'
-      ? { key: args[0], type: args[1] }
-      : {
-          key: args[0].key,
-          type: args[0].type,
-          filter: args[0].filter,
-          target: args[0].target,
-        };
-  let keyTriggered = guard({
-    clock: keyEvents[normalizedParams.type || 'keyup'],
-    filter: validateHotkey(normalizedParams.key),
-  }) as Event<KeyboardEvent>;
-  if (normalizedParams.filter) {
-    keyTriggered = guard({
+export const hotkey: HotkeyT = ({ key, type, filter, target }) => {
+  let keyEvent = keyEvents[type] ?? keyEvents.keyup;
+
+  let keyTriggered = sample({
+    clock: keyEvent,
+    filter: validateHotkey(key),
+  });
+
+  if (filter) {
+    keyTriggered = sample({
       clock: keyTriggered,
-      filter: normalizedParams.filter as Store<boolean>,
+      filter: filter,
     });
   }
-  if (normalizedParams.target) {
-    // @ts-expect-error
+
+  if (target) {
+    // @ts-expect-error починить типизацию для UnitTargetable[] в target
     sample({
-      // @ts-expect-error
       clock: keyTriggered,
-      // @ts-expect-error
-      target: normalizedParams.target,
+      target: target,
     });
   }
+
   return keyTriggered;
 };
 
