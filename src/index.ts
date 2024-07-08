@@ -6,13 +6,13 @@ import {
   Store,
   UnitTargetable,
 } from 'effector';
-import { validateHotkey } from './utils/validate-hotkey';
+import { validateHotkey } from './shared/lib/validate-hotkey';
 
 export const keyup = createEvent<KeyboardEvent>();
 export const keydown = createEvent<KeyboardEvent>();
 export const keypress = createEvent<KeyboardEvent>();
 
-const keyEvents = {
+export const keyEvents: {[key: string]: Event<KeyboardEvent>} = {
   keyup,
   keydown,
   keypress,
@@ -28,7 +28,7 @@ $isAltDown.on([keyup, keydown], (prev, evt) => evt.altKey);
 
 export interface HotkeyT {
   (params: {
-    key: string;
+    key: KeyboardEvent['key'];
     type: keyof typeof keyEvents;
     filter?: Store<boolean>;
     target?: UnitTargetable<unknown> | UnitTargetable<unknown>[];
@@ -36,7 +36,7 @@ export interface HotkeyT {
 }
 
 /** Returns `Event` that gets triggered when a certain key pressed (or keyup/keydown events triggered) */
-export const hotkey: HotkeyT = ({ key, type, filter, target }) => {
+  export const hotkey: HotkeyT = ({ key, type, filter, target }) => {
   let keyEvent = keyEvents[type] ?? keyEvents.keyup;
 
   let keyTriggered = sample({
